@@ -518,6 +518,9 @@ Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
   CHECK_LT(end, layers_.size());
   Dtype loss = 0;
   for (int i = start; i <= end; ++i) {
+    //std::cout << "This is done by layer " << i << std::endl;
+    //std::cout << "This is done by layer " << i << std::endl;
+    //std::cout << "This is done by layer " << i << std::endl;
     for (int c = 0; c < before_forward_.size(); ++c) {
       before_forward_[c]->run(i);
     }

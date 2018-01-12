@@ -95,15 +95,18 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     caffe_copy(bottom[0]->count(), bottom_data, top_data);
   }
 
+  std::cout << "could this run???" << std::endl;
   if (use_global_stats_) {
     // use the stored mean/variance estimates.
     const Dtype scale_factor = this->blobs_[2]->cpu_data()[0] == 0 ?
         0 : 1 / this->blobs_[2]->cpu_data()[0];
+
     caffe_cpu_scale(variance_.count(), scale_factor,
         this->blobs_[0]->cpu_data(), mean_.mutable_cpu_data());
     caffe_cpu_scale(variance_.count(), scale_factor,
         this->blobs_[1]->cpu_data(), variance_.mutable_cpu_data());
   } else {
+    std::cout << "The scale_factor is " << 1. / (num * spatial_dim) << std::endl;
     // compute mean
     caffe_cpu_gemv<Dtype>(CblasNoTrans, channels_ * num, spatial_dim,
         1. / (num * spatial_dim), bottom_data,

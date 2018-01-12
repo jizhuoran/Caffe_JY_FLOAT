@@ -162,6 +162,8 @@ void PoolingLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
             for (int h = hstart; h < hend; ++h) {
               for (int w = wstart; w < wend; ++w) {
                 const int index = h * width_ + w;
+                //std::cout << "bottom is " << bottom_data[index] << "top data " 
+                //  << top_data[pool_index] << "whether large" << (bottom_data[index] > top_data[pool_index]) << std::endl;
                 if (bottom_data[index] > top_data[pool_index]) {
                   top_data[pool_index] = bottom_data[index];
                   if (use_top_mask) {
@@ -255,7 +257,7 @@ void PoolingLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
           for (int pw = 0; pw < pooled_width_; ++pw) {
             const int index = ph * pooled_width_ + pw;
             const int bottom_index =
-                use_top_mask ? top_mask[index] : mask[index];
+                use_top_mask ? (int)top_mask[index] : mask[index];
             bottom_diff[bottom_index] += top_diff[index];
           }
         }

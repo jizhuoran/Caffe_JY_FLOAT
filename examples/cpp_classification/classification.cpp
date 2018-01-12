@@ -39,6 +39,8 @@ class Classifier {
 
  private:
   shared_ptr<Net<float> > net_;
+  shared_ptr<Net<half> > net_1;
+  
   cv::Size input_geometry_;
   int num_channels_;
   cv::Mat mean_;
@@ -59,8 +61,11 @@ Classifier::Classifier(const string& model_file,
   net_.reset(new Net<float>(model_file, TEST));
   net_->CopyTrainedLayersFrom(trained_file);
 
+  net_1.reset(new Net<half>(model_file, TEST));
+  net_1->CopyTrainedLayersFrom(trained_file);
+
   CHECK_EQ(net_->num_inputs(), 1) << "Network should have exactly one input.";
-  CHECK_EQ(net_->num_outputs(), 1) << "Network should have exactly one output.";
+  //CHECK_EQ(net_->num_outputs(), 1) << "Network should have exactly one output.";
 
   Blob<float>* input_layer = net_->input_blobs()[0];
   num_channels_ = input_layer->channels();
@@ -79,8 +84,8 @@ Classifier::Classifier(const string& model_file,
     labels_.push_back(string(line));
 
   Blob<float>* output_layer = net_->output_blobs()[0];
-  CHECK_EQ(labels_.size(), output_layer->channels())
-    << "Number of labels is different from the output layer dimension.";
+ // CHECK_EQ(labels_.size(), output_layer->channels())
+    //<< "Number of labels is different from the output layer dimension.";
 }
 
 static bool PairCompare(const std::pair<float, int>& lhs,
@@ -107,6 +112,9 @@ std::vector<Prediction> Classifier::Classify(const cv::Mat& img, int N) {
 
   N = std::min<int>(labels_.size(), N);
   std::vector<int> maxN = Argmax(output, N);
+	
+	
+	
   std::vector<Prediction> predictions;
   for (int i = 0; i < N; ++i) {
     int idx = maxN[i];
@@ -144,28 +152,126 @@ void Classifier::SetMean(const string& mean_file) {
   /* Compute the global mean pixel value and create a mean image
    * filled with this value. */
   cv::Scalar channel_mean = cv::mean(mean);
-  mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean);
+	mean_ = cv::Mat(input_geometry_, mean.type(), double(0));
 }
 
 std::vector<float> Classifier::Predict(const cv::Mat& img) {
   Blob<float>* input_layer = net_->input_blobs()[0];
+  const float* input_data_me = input_layer->cpu_data();
   input_layer->Reshape(1, num_channels_,
                        input_geometry_.height, input_geometry_.width);
   /* Forward dimension change to all layers. */
   net_->Reshape();
 
+  Blob<half>* input_layer1 = net_1->input_blobs()[0];
+  input_layer1->Reshape(1, num_channels_,
+                       input_geometry_.height, input_geometry_.width);
+  half* input_data_me1 = input_layer1->mutable_cpu_data();
+  /* Forward dimension change to all layers. */
+  net_1->Reshape();
+
   std::vector<cv::Mat> input_channels;
   WrapInputLayer(&input_channels);
 
-  Preprocess(img, &input_channels);
 
+  
+
+
+
+  Preprocess(img, &input_channels);
+  
+  imwrite( "Gray_Image.jpg", img );
+
+
+  
+  for(int i = 0; i < 3*227*227; ++i) {
+    input_data_me1[i] = input_data_me[i];
+  }
+
+
+  FILE *f1 = fopen("before_process.ppm", "wb");
+  fprintf(f1, "P6\n%i %i 255\n", 227, 227);
+  for (int y = 0; y < 227; y++) {
+    for (int x = 0; x < 227; x++) {
+      fputc(input_layer->cpu_data()[y * 227 + x], f1);   // 0 .. 255
+      fputc(input_layer->cpu_data()[y * 227 + x + 227 * 227], f1); // 0 .. 255
+      fputc(input_layer->cpu_data()[y * 227 + x + 2 * 227 * 227], f1);  // 0 .. 255
+    }
+  }
+  fclose(f1);
+
+
+  FILE *f = fopen("input.ppm", "wb");
+  fprintf(f, "P6\n%i %i 255\n", 227, 227);
+  for (int y = 0; y < 227; y++) {
+    for (int x = 0; x < 227; x++) {
+      fputc(input_layer1->cpu_data()[y * 227 + x], f);   // 0 .. 255
+      fputc(input_layer1->cpu_data()[y * 227 + x + 227 * 227], f); // 0 .. 255
+      fputc(input_layer1->cpu_data()[y * 227 + x + 2 * 227 * 227], f);  // 0 .. 255
+    }
+  }
+  fclose(f);
+
+  net_1->Forward();
   net_->Forward();
 
-  /* Copy the output layer to a std::vector */
+
+/*
+
+  for(int i = 0; i < net_->blobs().size(); ++i) {
+    std::cout << "This is blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This is blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This is blob" << net_->blob_names_[i] << std::endl;
+    const float* lf1 = net_->blobs()[i]->cpu_data();
+    const half*  lh1 = net_1->blobs()[i]->cpu_data();
+
+    for(int j = 0; j < net_->blobs()[i]->count(); ++j) {
+      std::cout << lf1[j] << "   ";// << lh1[j] << std::endl;
+    }
+
+    std::cout << "This blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This blob" << net_->blob_names_[i] << std::endl;
+
+
+    std::cout << "This is blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This is blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This is blob" << net_->blob_names_[i] << std::endl;
+
+    for(int j = 0; j < net_->blobs()[i]->count(); ++j) {
+      std::cout << lh1[j] << "   "; //<< lh1[j] << std::endl;
+    }
+
+    std::cout << "This blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This blob" << net_->blob_names_[i] << std::endl;
+    std::cout << "This blob" << net_->blob_names_[i] << std::endl;
+
+  }
+
+
+  
+  */
   Blob<float>* output_layer = net_->output_blobs()[0];
-  const float* begin = output_layer->cpu_data();
-  const float* end = begin + output_layer->channels();
-  return std::vector<float>(begin, end);
+
+  // const float* begin = output_layer->cpu_data();
+  // const float* end = begin + output_layer->channels();
+  // return std::vector<float>(begin, end);
+
+
+
+  /* Copy the output layer to a std::vector */
+  
+  Blob<half>* output_layer1 = net_1->output_blobs()[0];
+  const half* begin1 = output_layer1->cpu_data();
+  const half* end1 = begin1 + output_layer1->channels();
+
+  std::vector<half> tmp = std::vector<half>(begin1, end1);
+  std::vector<float> result1;
+
+  for(int i = 0; i < tmp.size(); ++i) {
+    result1.push_back(tmp[i]);
+  }
+  return result1;
 }
 
 /* Wrap the input layer of the network in separate cv::Mat objects

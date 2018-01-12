@@ -40,7 +40,7 @@ template <typename Dtype>
 void caffe_set(const int N, const Dtype alpha, Dtype *X);
 
 inline void caffe_memset(const size_t N, const int alpha, void* X) {
-  memset(X, alpha, N);  // NOLINT(caffe/alt_fn)
+	memset(X, alpha, N);  // NOLINT(caffe/alt_fn)
 }
 
 template <typename Dtype>
@@ -145,6 +145,13 @@ DEFINE_CAFFE_CPU_UNARY_FUNC(fabs, y[i] = std::fabs(x[i]))
 template <typename Dtype>
 void caffe_cpu_scale(const int n, const Dtype alpha, const Dtype *x, Dtype* y);
 
+	template <typename T_IN, typename T_OUT>
+		inline void caffe_cpu_convert(const int n, const T_IN *in, T_OUT *out) {
+			for (int i = 0; i < n; ++i) {
+				out[i] = static_cast<T_OUT>(in[i]);
+			}
+		}
+	
 #ifndef CPU_ONLY  // GPU
 
 // Decaf gpu gemm provides an interface that is almost the same as the cpu

@@ -16,8 +16,104 @@ void caffe_cpu_gemm<float>(const CBLAS_TRANSPOSE TransA,
     float* C) {
   int lda = (TransA == CblasNoTrans) ? K : M;
   int ldb = (TransB == CblasNoTrans) ? N : K;
+	    
+	    std::cout << "aaaaaaaa zhen de gg a" << 4 << std::endl;
+	    for (int j = 0; j < M*K; ++j) {
+		    std::cout << A[j] << " ";
+	    }
+	    std::cout << " " << std::endl;
+	    
+	    std::cout << "aaaaaaaaa zhen de gg b" << 4 <<  std::endl;
+	    
+	    
+	    std::cout << "bbbbbbbbb zhen de gg a" << 4 << std::endl;
+	    for (int j = 0; j < K*N; ++j) {
+		    std::cout << B[j] << " ";
+	    }
+	    std::cout << " " << std::endl;
+	    
+	    std::cout << "bbbbbbbbbbb zhen de gg b" << 4 <<  std::endl;
+	    
+	    
   cblas_sgemm(CblasRowMajor, TransA, TransB, M, N, K, alpha, A, lda, B,
       ldb, beta, C, N);
+	    
+	    std::cout << "cccccc zhen de gg a" << 4 << std::endl;
+	   for (int j = 0; j < M*N; ++j) {
+		    std::cout << C[j] << " ";
+	    }
+	    std::cout << " " << std::endl;
+	    //std::cout << static_cast<float>(alpha) << "   " << static_cast<float>(beta) << std::endl;
+	    
+	    std::cout << "cccccc zhen de gg b" << 4 <<  std::endl;
+	    
+	    exit(0);
+}
+
+template<>
+void caffe_cpu_gemm<half>(const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+    const half alpha, const half* A, const half* B, const half beta,
+    half* C) {
+  
+	    if (M <= 0 || N <= 0 || K <= 0) {
+		    return;
+	    }
+	    std::vector<float> a(M*K), b(K*N), c(M*N);
+	    caffe_cpu_convert(a.size(), A, &a.front());
+	    caffe_cpu_convert(b.size(), B, &b.front());
+//	    for (int i = 0; i < c.size(); ++i) {
+	//	    c[i] = 0;
+	  //  }
+	    caffe_cpu_convert(c.size(), C, &c.front());
+	    
+	    /*
+	    std::cout << "aaaaaaaa zhen de gg a" << 2 << std::endl;
+	    for (int j = 0; j < a.size(); ++j) {
+		    std::cout << a[j] << " ";
+	    }
+	    std::cout << " " << std::endl;
+	    
+	    std::cout << "aaaaaaaaa zhen de gg b" << 2 <<  std::endl;
+	    
+	    
+	    std::cout << "bbbbb zhen de gg a" << 2 << std::endl;
+	    for (int j = 0; j < b.size(); ++j) {
+		    std::cout << b[j] << " ";
+	    }
+	    std::cout << " " << std::endl;
+	    
+	    std::cout << "bbbbbbb zhen de gg b" << 2 <<  std::endl;*/
+	    
+	    
+	    const int lda = (TransA == CblasNoTrans) ? K : M;
+	    const int ldb = (TransB == CblasNoTrans) ? N : K;
+	    cblas_sgemm(CblasRowMajor,
+		    TransA,
+		    TransB,
+		    M,
+		    N,
+		    K,
+		    static_cast<float>(alpha),
+		    &a.front(),
+		    lda,
+		    &b.front(),
+		    ldb,
+		    static_cast<float>(beta),
+		    &c.front(),
+		    N);
+	    caffe_cpu_convert(c.size(), &c.front(), C);
+	    
+	    
+	   /* std::cout << "ccccccc zhen de gg a" << 2 << std::endl;
+	    for (int j = 0; j < M*N; ++j) {
+		   std::cout << c[j] << " ";
+	    }
+	    std::cout << " " << std::endl;
+	   // std::cout << static_cast<float>(alpha) << "   " << static_cast<float>(beta) << std::endl;
+	    std::cout << "cccccc zhen de gg b" << 2 <<  std::endl;
+	    
+	    exit(0);*/
 }
 
 template<>
@@ -39,6 +135,36 @@ void caffe_cpu_gemv<float>(const CBLAS_TRANSPOSE TransA, const int M,
 }
 
 template <>
+void caffe_cpu_gemv<half>(const CBLAS_TRANSPOSE TransA, const int M,
+    const int N, const half alpha, const half* A, const half* x,
+    const half beta, half* y) {
+  //std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+	    if (M <= 0 || N <= 0) {
+		    return;
+	    }
+	    const int lx = (TransA == CblasNoTrans) ? N : M;
+	    const int ly = (TransA == CblasNoTrans) ? M : N;
+	    std::vector<float> a(M*N), xv(lx), yv(ly);
+	    caffe_cpu_convert(a.size(), A, &a.front());
+	    caffe_cpu_convert(xv.size(), x, &xv.front());
+	    caffe_cpu_convert(yv.size(), y, &yv.front());
+	    cblas_sgemv(CblasRowMajor,
+		    TransA,
+		    M,
+		    N,
+		    static_cast<float>(alpha),
+		    &a.front(),
+		    N,
+		    &xv.front(),
+		    1,
+		    static_cast<float>(beta),
+		    &yv.front(),
+		    1);
+	    caffe_cpu_convert(yv.size(), &yv.front(), y);
+}
+
+template <>
 void caffe_cpu_gemv<double>(const CBLAS_TRANSPOSE TransA, const int M,
     const int N, const double alpha, const double* A, const double* x,
     const double beta, double* y) {
@@ -50,26 +176,42 @@ void caffe_axpy<float>(const int N, const float alpha, const float* X,
     float* Y) { cblas_saxpy(N, alpha, X, 1, Y, 1); }
 
 template <>
+void caffe_axpy<half>(const int N, const half alpha, const half* X,
+    half* Y) {
+  // std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+	    for (int i = 0; i < N; ++i) {
+		    Y[i] = alpha * X[i] + Y[i];
+	    }
+
+}
+
+template <>
 void caffe_axpy<double>(const int N, const double alpha, const double* X,
     double* Y) { cblas_daxpy(N, alpha, X, 1, Y, 1); }
 
 template <typename Dtype>
 void caffe_set(const int N, const Dtype alpha, Dtype* Y) {
-  if (alpha == 0) {
-    memset(Y, 0, sizeof(Dtype) * N);  // NOLINT(caffe/alt_fn)
-    return;
-  }
   for (int i = 0; i < N; ++i) {
     Y[i] = alpha;
   }
 }
 
 template void caffe_set<int>(const int N, const int alpha, int* Y);
+template void caffe_set<half>(const int N, const half alpha, half* Y);
+
 template void caffe_set<float>(const int N, const float alpha, float* Y);
 template void caffe_set<double>(const int N, const double alpha, double* Y);
 
 template <>
 void caffe_add_scalar(const int N, const float alpha, float* Y) {
+  for (int i = 0; i < N; ++i) {
+    Y[i] += alpha;
+  }
+}
+
+template <>
+void caffe_add_scalar(const int N, const half alpha, half* Y) {
   for (int i = 0; i < N; ++i) {
     Y[i] += alpha;
   }
@@ -101,12 +243,26 @@ void caffe_copy(const int N, const Dtype* X, Dtype* Y) {
 template void caffe_copy<int>(const int N, const int* X, int* Y);
 template void caffe_copy<unsigned int>(const int N, const unsigned int* X,
     unsigned int* Y);
+template<> 
+void caffe_copy<half>(const int N, const half* X, half* Y) {
+  for(int i = 0; i < N; ++i) {
+    Y[i] = X[i];
+  }
+}
 template void caffe_copy<float>(const int N, const float* X, float* Y);
 template void caffe_copy<double>(const int N, const double* X, double* Y);
 
 template <>
 void caffe_scal<float>(const int N, const float alpha, float *X) {
   cblas_sscal(N, alpha, X, 1);
+}
+
+template <>
+void caffe_scal<half>(const int N, const half alpha, half *X) {
+	for (int i = 0; i < N; ++i) {
+		X[i] = alpha * X[i];
+	}
+
 }
 
 template <>
@@ -120,6 +276,20 @@ void caffe_cpu_axpby<float>(const int N, const float alpha, const float* X,
   cblas_saxpby(N, alpha, X, 1, beta, Y, 1);
 }
 
+
+template <>
+void caffe_cpu_axpby<half>(const int N, const half alpha, const half* X,
+                            const half beta, half* Y) {
+  
+
+	                            for (int i = 0; i < N; ++i) {
+		                            Y[i] = alpha * X[i] + beta * Y[i];
+	                            }
+
+
+}
+
+
 template <>
 void caffe_cpu_axpby<double>(const int N, const double alpha, const double* X,
                              const double beta, double* Y) {
@@ -130,6 +300,16 @@ template <>
 void caffe_add<float>(const int n, const float* a, const float* b,
     float* y) {
   vsAdd(n, a, b, y);
+}
+
+template <>
+void caffe_add<half>(const int n, const half* a, const half* b,
+    half* y) {
+
+	    for (int i = 0; i < n; ++i) {
+		    y[i] = a[i] + b[i];
+	    }
+
 }
 
 template <>
@@ -145,6 +325,15 @@ void caffe_sub<float>(const int n, const float* a, const float* b,
 }
 
 template <>
+void caffe_sub<half>(const int n, const half* a, const half* b,
+    half* y) {
+	    for (int i = 0; i < n; ++i) {
+		    y[i] = a[i] - b[i];
+	    }
+}
+
+
+template <>
 void caffe_sub<double>(const int n, const double* a, const double* b,
     double* y) {
   vdSub(n, a, b, y);
@@ -156,6 +345,17 @@ void caffe_mul<float>(const int n, const float* a, const float* b,
   vsMul(n, a, b, y);
 }
 
+
+template <>
+void caffe_mul<half>(const int n, const half* a, const half* b,
+    half* y) {
+	    for (int i = 0; i < n; ++i) {
+	      //  vhMul(n, a, b, y);
+		    y[i] = a[i] * b[i];
+	    }
+}
+
+
 template <>
 void caffe_mul<double>(const int n, const double* a, const double* b,
     double* y) {
@@ -166,6 +366,14 @@ template <>
 void caffe_div<float>(const int n, const float* a, const float* b,
     float* y) {
   vsDiv(n, a, b, y);
+}
+
+template <>
+void caffe_div<half>(const int n, const half* a, const half* b,
+    half* y) {
+	    for (int i = 0; i < n; ++i) {
+		    y[i] = a[i] / b[i];
+	    }
 }
 
 template <>
@@ -181,6 +389,15 @@ void caffe_powx<float>(const int n, const float* a, const float b,
 }
 
 template <>
+void caffe_powx<half>(const int n, const half* a, const half b,
+    half* y) {
+	    for (int i = 0; i < n; ++i) {
+		    y[i] = pow(static_cast<float>(a[i]), static_cast<float>(b));
+	    }
+}
+
+
+template <>
 void caffe_powx<double>(const int n, const double* a, const double b,
     double* y) {
   vdPowx(n, a, b, y);
@@ -189,7 +406,35 @@ void caffe_powx<double>(const int n, const double* a, const double b,
 template <>
 void caffe_sqr<float>(const int n, const float* a, float* y) {
   vsSqr(n, a, y);
+
+ // std::cout << "xingbei zhe ge dou ke yi dui ma dui1???" << std::endl;
+  
+ // for (int i = 0; i < n; ++i) {
+  //  std::cout << y[i] << " ";
+  //}
+  //std::cout << "xingbei zhe ge dou ke yi dui ma dui1???" << std::endl;
+  //std::cout << "xingbei zhe ge dou bu dui2???" << std::endl;
+
+
 }
+
+template <>
+void caffe_sqr<half>(const int n, const half* a, half* y) {
+
+    for (int i = 0; i < n; ++i) {
+	    y[i] = a[i] * a[i];
+    }
+    //std::cout << "xingbei zhe ge dou bu dui1???" << std::endl;
+    
+	for (int i = 0; i < n; ++i) {
+		if (isinf(y[i])) {
+			y[i] = std::numeric_limits<half>::max();
+			std::cout << "why it become inf" << y[i] << std::endl;
+			//CHECK_GE(-1, 0);
+		}
+	}
+}
+
 
 template <>
 void caffe_sqr<double>(const int n, const double* a, double* y) {
@@ -199,6 +444,26 @@ void caffe_sqr<double>(const int n, const double* a, double* y) {
 template <>
 void caffe_sqrt<float>(const int n, const float* a, float* y) {
   vsSqrt(n, a, y);
+}
+
+template <>
+void caffe_sqrt<half>(const int n, const half* a, half* y) {
+    float *da = new float[n];
+    float *dy = new float[n];
+
+    for (int i = 0; i < n; ++i) {
+      da[i] = (float)a[i];
+    }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+    vsSqrt(n, da, dy);
+
+    for (int i = 0; i < n; ++i) {
+      y[i] = dy[i];
+    }
+
+    delete[] da;
+    delete[] dy;
 }
 
 template <>
@@ -212,6 +477,26 @@ void caffe_exp<float>(const int n, const float* a, float* y) {
 }
 
 template <>
+void caffe_exp<half>(const int n, const half* a, half* y) {
+    float *da = new float[n];
+    float *dy = new float[n];
+
+    for (int i = 0; i < n; ++i) {
+      da[i] = (float)a[i];
+    }
+
+    vsExp(n, da, dy);
+    //std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+    for (int i = 0; i < n; ++i) {
+      y[i] = dy[i];
+    }
+
+    delete[] da;
+    delete[] dy;
+}
+
+template <>
 void caffe_exp<double>(const int n, const double* a, double* y) {
   vdExp(n, a, y);
 }
@@ -222,6 +507,26 @@ void caffe_log<float>(const int n, const float* a, float* y) {
 }
 
 template <>
+void caffe_log<half>(const int n, const half* a, half* y) {
+    float *da = new float[n];
+    float *dy = new float[n];
+
+    for (int i = 0; i < n; ++i) {
+      da[i] = (float)a[i];
+    }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+    vsLn(n, da, dy);
+
+    for (int i = 0; i < n; ++i) {
+      y[i] = dy[i];
+    }
+
+    delete[] da;
+    delete[] dy;
+}
+
+template <>
 void caffe_log<double>(const int n, const double* a, double* y) {
   vdLn(n, a, y);
 }
@@ -229,6 +534,26 @@ void caffe_log<double>(const int n, const double* a, double* y) {
 template <>
 void caffe_abs<float>(const int n, const float* a, float* y) {
     vsAbs(n, a, y);
+}
+
+template <>
+void caffe_abs<half>(const int n, const half* a, half* y) {
+    float *da = new float[n];
+    float *dy = new float[n];
+
+    for (int i = 0; i < n; ++i) {
+      da[i] = (float)a[i];
+    }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+    caffe_abs(n, da, dy);
+
+    for (int i = 0; i < n; ++i) {
+      y[i] = dy[i];
+    }
+
+    delete[] da;
+    delete[] dy;
 }
 
 template <>
@@ -249,6 +574,11 @@ Dtype caffe_nextafter(const Dtype b) {
 template
 float caffe_nextafter(const float b);
 
+template <>
+half caffe_nextafter(const half b) {
+  return caffe_nextafter((float) b);
+}
+
 template
 double caffe_nextafter(const double b);
 
@@ -268,6 +598,21 @@ void caffe_rng_uniform(const int n, const Dtype a, const Dtype b, Dtype* r) {
 template
 void caffe_rng_uniform<float>(const int n, const float a, const float b,
                               float* r);
+
+template <>
+void caffe_rng_uniform(const int n, const half a, const half b, half* r) {
+  CHECK_GE(n, 0);
+  CHECK(r);
+  CHECK_LE(a, b);
+  boost::uniform_real<float> random_distribution((float)a, caffe_nextafter<float>((float)b));
+  boost::variate_generator<caffe::rng_t*, boost::uniform_real<float> >
+      variate_generator(caffe_rng(), random_distribution);
+  for (int i = 0; i < n; ++i) {
+    r[i] = (half)variate_generator();
+  }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+}
 
 template
 void caffe_rng_uniform<double>(const int n, const double a, const double b,
@@ -291,6 +636,22 @@ template
 void caffe_rng_gaussian<float>(const int n, const float mu,
                                const float sigma, float* r);
 
+template <>
+void caffe_rng_gaussian(const int n, const half a,
+                        const half sigma, half* r) {
+  CHECK_GE(n, 0);
+  CHECK(r);
+  CHECK_GT((float)sigma, 0);
+  boost::normal_distribution<float> random_distribution((float)a, (float)sigma);
+  boost::variate_generator<caffe::rng_t*, boost::normal_distribution<float> >
+      variate_generator(caffe_rng(), random_distribution);
+  for (int i = 0; i < n; ++i) {
+    r[i] = (half)variate_generator();
+  }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+}
+
 template
 void caffe_rng_gaussian<double>(const int n, const double mu,
                                 const double sigma, double* r);
@@ -312,6 +673,22 @@ void caffe_rng_bernoulli(const int n, const Dtype p, int* r) {
 template
 void caffe_rng_bernoulli<double>(const int n, const double p, int* r);
 
+template <>
+void caffe_rng_bernoulli(const int n, const half p, int* r) {
+  CHECK_GE(n, 0);
+  CHECK(r);
+  CHECK_GE((float)p, 0);
+  CHECK_LE((float)p, 1);
+  boost::bernoulli_distribution<float> random_distribution((float)p);
+  boost::variate_generator<caffe::rng_t*, boost::bernoulli_distribution<float> >
+      variate_generator(caffe_rng(), random_distribution);
+  for (int i = 0; i < n; ++i) {
+    r[i] = (half)variate_generator();
+  }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+}
+
 template
 void caffe_rng_bernoulli<float>(const int n, const float p, int* r);
 
@@ -332,6 +709,22 @@ void caffe_rng_bernoulli(const int n, const Dtype p, unsigned int* r) {
 template
 void caffe_rng_bernoulli<double>(const int n, const double p, unsigned int* r);
 
+template <>
+void caffe_rng_bernoulli(const int n, const half p, unsigned int* r) {
+  CHECK_GE(n, 0);
+  CHECK(r);
+  CHECK_GE((float)p, 0);
+  CHECK_LE((float)p, 1);
+  boost::bernoulli_distribution<float> random_distribution((float)p);
+  boost::variate_generator<caffe::rng_t*, boost::bernoulli_distribution<float> >
+      variate_generator(caffe_rng(), random_distribution);
+  for (int i = 0; i < n; ++i) {
+    r[i] = static_cast<unsigned int>(variate_generator());
+  }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+  
+}
+
 template
 void caffe_rng_bernoulli<float>(const int n, const float p, unsigned int* r);
 
@@ -339,6 +732,30 @@ template <>
 float caffe_cpu_strided_dot<float>(const int n, const float* x, const int incx,
     const float* y, const int incy) {
   return cblas_sdot(n, x, incx, y, incy);
+}
+
+template <>
+half caffe_cpu_strided_dot<half>(const int n, const half* x, const int incx,
+    const half* y, const int incy) {
+
+    float *dx = new float[n];
+    float *dy = new float[n];
+
+    for (int i = 0; i < n; ++i) {
+      dx[i] = (float)x[i];
+    }
+    for (int i = 0; i < n; ++i) {
+      dy[i] = (float)y[i];
+    }
+  //std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+    float tmp = cblas_sdot(n, dx, incx, dy, incy);
+
+    delete[] dx;
+    delete[] dy;
+
+    return (half)tmp;
+
 }
 
 template <>
@@ -356,6 +773,9 @@ template
 float caffe_cpu_dot<float>(const int n, const float* x, const float* y);
 
 template
+half caffe_cpu_dot<half>(const int n, const half* x, const half* y);
+
+template
 double caffe_cpu_dot<double>(const int n, const double* x, const double* y);
 
 template <>
@@ -364,15 +784,60 @@ float caffe_cpu_asum<float>(const int n, const float* x) {
 }
 
 template <>
+half caffe_cpu_asum<half>(const int n, const half* x) {
+    float *dx = new float[n];
+
+    for (int i = 0; i < n; ++i) {
+      dx[i] = (float)x[i];
+    }
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+    float tmp = cblas_sasum(n, dx, 1);
+
+    delete[] dx;
+
+    return (half)tmp;
+}
+
+
+template <>
 double caffe_cpu_asum<double>(const int n, const double* x) {
   return cblas_dasum(n, x, 1);
 }
 
+
 template <>
 void caffe_cpu_scale<float>(const int n, const float alpha, const float *x,
-                            float* y) {
+                             float* y) {
   cblas_scopy(n, x, 1, y, 1);
   cblas_sscal(n, alpha, y, 1);
+}
+
+template <>
+void caffe_cpu_scale<half>(const int n, const half alpha, const half *x,
+                            half* y) {  
+
+    float *dx = new float[n];
+    float *dy = new float[n];
+  std::cout << "hahahahahaggggggg"<< __func__ << std::endl;
+
+    for (int i = 0; i < n; ++i) {
+      dx[i] = (float)x[i];
+    }
+
+    for (int i = 0; i < n; ++i) {
+      dy[i] = (float)y[i];
+    }
+
+    cblas_scopy(n, dx, 1, dy, 1);
+    cblas_sscal(n, (float)alpha, dy, 1);
+
+    for (int i = 0; i < n; ++i) {
+      y[i] = dy[i];
+    }
+
+    delete[] dx;
+    delete[] dy;
 }
 
 template <>

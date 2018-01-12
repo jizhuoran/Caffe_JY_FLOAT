@@ -17,6 +17,9 @@
 #include <vector>
 
 #include "caffe/util/device_alternate.hpp"
+#include "caffe/half.hpp"
+
+using half_float::half;
 
 // Convert macro to string
 #define STRINGIFY(m) #m
@@ -40,6 +43,7 @@ private:\
 // Instantiate a class with float and double specifications.
 #define INSTANTIATE_CLASS(classname) \
   char gInstantiationGuard##classname; \
+  template class classname<half>; \
   template class classname<float>; \
   template class classname<double>
 

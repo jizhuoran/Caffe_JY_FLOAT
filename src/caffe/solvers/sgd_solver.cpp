@@ -49,8 +49,8 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
     rate = this->param_.base_lr() *
         pow(this->param_.gamma(), this->current_step_);
   } else if (lr_policy == "poly") {
-    rate = this->param_.base_lr() * pow(Dtype(1.) -
-        (Dtype(this->iter_) / Dtype(this->param_.max_iter())),
+    Dtype pow_tmp  = Dtype(1.) - (Dtype(this->iter_) / Dtype(this->param_.max_iter()));
+    rate = this->param_.base_lr() * pow(pow_tmp ,
         this->param_.power());
   } else if (lr_policy == "sigmoid") {
     rate = this->param_.base_lr() * (Dtype(1.) /

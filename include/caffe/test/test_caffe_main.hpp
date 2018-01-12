@@ -51,7 +51,7 @@ class CPUDeviceTest : public MultiDeviceTest<CPUDevice<Dtype> > {
 
 #ifdef CPU_ONLY
 
-typedef ::testing::Types<CPUDevice<float>,
+typedef ::testing::Types<CPUDevice<half>,
                          CPUDevice<double> > TestDtypesAndDevices;
 
 #else

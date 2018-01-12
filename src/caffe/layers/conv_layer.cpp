@@ -31,12 +31,21 @@ void ConvolutionLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     for (int n = 0; n < this->num_; ++n) {
       this->forward_cpu_gemm(bottom_data + n * this->bottom_dim_, weight,
           top_data + n * this->top_dim_);
+	    
+
+	    
       if (this->bias_term_) {
         const Dtype* bias = this->blobs_[1]->cpu_data();
         this->forward_cpu_bias(top_data + n * this->top_dim_, bias);
       }
     }
   }
+	      /*std::cout << "ggggggg hhahahaha1 " << sizeof(Dtype) << std::endl;
+	      for (int i = 0; i < top[0]->count(); ++i) {
+		      std::cout << top[0]->cpu_data()[i] << "   ";
+	      }
+	      std::cout << "ggggggg hhahahaha2 " << sizeof(Dtype) << std::endl;*/
+	      
 }
 
 template <typename Dtype>

@@ -97,6 +97,7 @@ void ReductionLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
   Dtype* bottom_diff = bottom[0]->mutable_cpu_diff();
   for (int i = 0; i < num_; ++i) {
     const Dtype bottom_coeff = (*top_diff) * coeff_;
+    Dtype caffe_cpu_scale_tmp = 2 * bottom_coeff;
     switch (op_) {
     case ReductionParameter_ReductionOp_SUM:
     case ReductionParameter_ReductionOp_MEAN:
@@ -107,7 +108,7 @@ void ReductionLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
       caffe_scal(dim_, bottom_coeff, bottom_diff);
       break;
     case ReductionParameter_ReductionOp_SUMSQ:
-      caffe_cpu_scale(dim_, 2 * bottom_coeff, bottom_data, bottom_diff);
+      caffe_cpu_scale(dim_, caffe_cpu_scale_tmp, bottom_data, bottom_diff);
       break;
     default:
       LOG(FATAL) << "Unknown reduction op: "
